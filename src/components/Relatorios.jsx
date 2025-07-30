@@ -1,56 +1,49 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Filter, RotateCcw, FileText, TrendingUp, Clock, Users } from 'lucide-react';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '../firebase/config';
+import { Button } from './ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const Relatorios = () => {
   const [registros, setRegistros] = useState([]);
-  const [registrosFiltrados, setRegistrosFiltrados] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filtros, setFiltros] = useState({
     dataInicio: '',
     dataFim: '',
     turno: 'todos'
   });
+  const [registrosFiltrados, setRegistrosFiltrados] = useState([]);
 
   // Carregar registros do Firebase
   useEffect(() => {
+    const carregarRegistros = async () => {
+      try {
+        console.log('Carregando registros do Firebase...');
+        const q = query(collection(db, 'registros'), orderBy('timestamp', 'desc'));
+        const querySnapshot = await getDocs(q);
+        
+        const registrosData = [];
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          registrosData.push({
+            id: doc.id,
+            ...data
+          });
+        });
+        
+        console.log('Registros carregados:', registrosData);
+        setRegistros(registrosData);
+        setRegistrosFiltrados(registrosData);
+        setLoading(false);
+      } catch (error) {
+        console.error('Erro ao carregar registros:', error);
+        setLoading(false);
+      }
+    };
+
     carregarRegistros();
   }, []);
-
-  const carregarRegistros = async () => {
-    try {
-      setLoading(true);
-      const registrosRef = collection(db, 'registros');
-      const q = query(registrosRef, orderBy('timestamp', 'desc'));
-      const querySnapshot = await getDocs(q);
-      
-      const registrosData = [];
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        registrosData.push({
-          id: doc.id,
-          ...data,
-          // Garantir que a data esteja no formato correto
-          data: data.data || new Date(data.timestamp?.toDate()).toISOString().split('T')[0],
-          turno: data.turno || '1'
-        });
-      });
-      
-      console.log('Registros carregados:', registrosData);
-      setRegistros(registrosData);
-      setRegistrosFiltrados(registrosData); // Mostrar todos por padrão
-    } catch (error) {
-      console.error('Erro ao carregar registros:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // Aplicar filtros
   const aplicarFiltros = () => {
@@ -76,12 +69,10 @@ const Relatorios = () => {
     // Filtro por turno
     if (filtros.turno !== 'todos') {
       registrosFiltrados = registrosFiltrados.filter(registro => 
-        registro.turno?.toString() === filtros.turno
+        registro.turno === parseInt(filtros.turno)
       );
     }
 
-    console.log('Filtros aplicados:', filtros);
-    console.log('Registros filtrados:', registrosFiltrados);
     setRegistrosFiltrados(registrosFiltrados);
   };
 
@@ -92,7 +83,7 @@ const Relatorios = () => {
       dataFim: '',
       turno: 'todos'
     });
-    setRegistrosFiltrados(registros); // Mostrar todos os registros
+    setRegistrosFiltrados(registros);
   };
 
   // Calcular estatísticas
@@ -102,49 +93,37 @@ const Relatorios = () => {
         totalRegistros: 0,
         producaoTotal: 0,
         totalParadas: 0,
-        producaoMedia: 0
+        producaoMediaPorHora: 0
       };
     }
 
-    const totalRegistros = registrosFiltrados.length;
     const producaoTotal = registrosFiltrados.reduce((total, registro) => {
       return total + (parseFloat(registro.toneladas) || 0);
     }, 0);
 
     const totalParadas = registrosFiltrados.reduce((total, registro) => {
-      return total + (parseInt(registro.numeroParadas) || 0);
+      return total + (registro.paradas ? registro.paradas.length : 0);
     }, 0);
 
-    const producaoMedia = registrosFiltrados.reduce((total, registro) => {
+    const producaoMediaPorHora = registrosFiltrados.reduce((total, registro) => {
       return total + (parseFloat(registro.producaoPorHora) || 0);
-    }, 0) / totalRegistros;
+    }, 0) / registrosFiltrados.length;
 
     return {
-      totalRegistros,
+      totalRegistros: registrosFiltrados.length,
       producaoTotal: producaoTotal.toFixed(1),
       totalParadas,
-      producaoMedia: producaoMedia.toFixed(2)
+      producaoMediaPorHora: producaoMediaPorHora.toFixed(2)
     };
   };
 
   // Preparar dados para o gráfico
   const prepararDadosGrafico = () => {
-    const dadosPorData = {};
-    
-    registrosFiltrados.forEach(registro => {
-      const data = registro.data;
-      if (!dadosPorData[data]) {
-        dadosPorData[data] = 0;
-      }
-      dadosPorData[data] += parseFloat(registro.toneladas) || 0;
-    });
-
-    return Object.entries(dadosPorData)
-      .map(([data, producao]) => ({
-        data: new Date(data).toLocaleDateString('pt-BR'),
-        producao: producao
-      }))
-      .sort((a, b) => new Date(a.data) - new Date(b.data));
+    return registrosFiltrados.map(registro => ({
+      data: new Date(registro.data).toLocaleDateString('pt-BR'),
+      producao: parseFloat(registro.toneladas) || 0,
+      operador: registro.operador || 'N/A'
+    }));
   };
 
   const estatisticas = calcularEstatisticas();
@@ -152,64 +131,78 @@ const Relatorios = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex justify-center items-center h-64">
         <div className="text-lg">Carregando relatórios...</div>
+      </div>
+    );
+  }
+
+  if (registros.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <div className="text-6xl mb-4">📊</div>
+        <h2 className="text-2xl font-bold mb-2">Nenhum relatório encontrado</h2>
+        <p className="text-gray-600 mb-4">Ainda não há dados salvos para exibir relatórios.</p>
+        <p className="text-sm text-gray-500">
+          Vá para a aba "Novo Registro" e salve alguns dados para visualizar os relatórios aqui.
+        </p>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
+      {/* Cabeçalho */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold">📊 Relatórios de Produção</h1>
+        <div className="text-sm text-gray-500">
+          {registrosFiltrados.length} de {registros.length} registros
+        </div>
+      </div>
+
       {/* Filtros */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            Filtros
-          </CardTitle>
+          <CardTitle>🔍 Filtros</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-2">Data Início</label>
-              <Input
+              <label className="block text-sm font-medium mb-1">Data Início</label>
+              <input
                 type="date"
                 value={filtros.dataInicio}
-                onChange={(e) => setFiltros(prev => ({ ...prev, dataInicio: e.target.value }))}
-                placeholder="dd/mm/aaaa"
+                onChange={(e) => setFiltros({...filtros, dataInicio: e.target.value})}
+                className="w-full p-2 border rounded"
               />
             </div>
-            
             <div>
-              <label className="block text-sm font-medium mb-2">Data Fim</label>
-              <Input
+              <label className="block text-sm font-medium mb-1">Data Fim</label>
+              <input
                 type="date"
                 value={filtros.dataFim}
-                onChange={(e) => setFiltros(prev => ({ ...prev, dataFim: e.target.value }))}
-                placeholder="dd/mm/aaaa"
+                onChange={(e) => setFiltros({...filtros, dataFim: e.target.value})}
+                className="w-full p-2 border rounded"
               />
             </div>
-            
             <div>
-              <label className="block text-sm font-medium mb-2">Turno</label>
-              <Select value={filtros.turno} onValueChange={(value) => setFiltros(prev => ({ ...prev, turno: value }))}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Todos os Turnos" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos os Turnos</SelectItem>
-                  <SelectItem value="1">Turno 1</SelectItem>
-                  <SelectItem value="2">Turno 2</SelectItem>
-                  <SelectItem value="3">Turno 3</SelectItem>
-                </SelectContent>
-              </Select>
+              <label className="block text-sm font-medium mb-1">Turno</label>
+              <select
+                value={filtros.turno}
+                onChange={(e) => setFiltros({...filtros, turno: e.target.value})}
+                className="w-full p-2 border rounded"
+              >
+                <option value="todos">Todos os turnos</option>
+                <option value="1">Turno 1</option>
+                <option value="2">Turno 2</option>
+                <option value="3">Turno 3</option>
+              </select>
             </div>
-            
-            <div className="flex gap-2">
+            <div className="flex items-end gap-2">
               <Button onClick={aplicarFiltros} className="flex-1">
                 Aplicar Filtros
               </Button>
-              <Button variant="outline" onClick={limparFiltros}>
+              <Button onClick={limparFiltros} variant="outline">
                 Limpar
               </Button>
             </div>
@@ -221,49 +214,26 @@ const Relatorios = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Total de Registros</p>
-                <p className="text-2xl font-bold">{estatisticas.totalRegistros}</p>
-              </div>
-              <FileText className="h-8 w-8 text-blue-600" />
-            </div>
+            <div className="text-2xl font-bold text-blue-600">{estatisticas.totalRegistros}</div>
+            <div className="text-sm text-gray-600">Total de Registros</div>
           </CardContent>
         </Card>
-
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Produção Total</p>
-                <p className="text-2xl font-bold">{estatisticas.producaoTotal}t</p>
-              </div>
-              <TrendingUp className="h-8 w-8 text-green-600" />
-            </div>
+            <div className="text-2xl font-bold text-green-600">{estatisticas.producaoTotal}t</div>
+            <div className="text-sm text-gray-600">Produção Total</div>
           </CardContent>
         </Card>
-
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Total de Paradas</p>
-                <p className="text-2xl font-bold">{estatisticas.totalParadas}</p>
-              </div>
-              <Clock className="h-8 w-8 text-orange-600" />
-            </div>
+            <div className="text-2xl font-bold text-red-600">{estatisticas.totalParadas}</div>
+            <div className="text-sm text-gray-600">Total de Paradas</div>
           </CardContent>
         </Card>
-
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Produção Média/h</p>
-                <p className="text-2xl font-bold">{estatisticas.producaoMedia}t/h</p>
-              </div>
-              <Users className="h-8 w-8 text-purple-600" />
-            </div>
+            <div className="text-2xl font-bold text-purple-600">{estatisticas.producaoMediaPorHora}t/h</div>
+            <div className="text-sm text-gray-600">Produção Média/h</div>
           </CardContent>
         </Card>
       </div>
@@ -271,52 +241,66 @@ const Relatorios = () => {
       {/* Gráfico */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BarChart className="h-5 w-5" />
-            Produção por Data
-          </CardTitle>
+          <CardTitle>📈 Gráfico de Produção por Data</CardTitle>
         </CardHeader>
         <CardContent>
-          {dadosGrafico.length > 0 ? (
-            <ResponsiveContainer width="100%" height={300}>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
               <BarChart data={dadosGrafico}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="data" />
                 <YAxis />
                 <Tooltip 
-                  formatter={(value) => [`${value}t`, 'Produção']}
+                  formatter={(value, name) => [`${value}t`, 'Produção']}
                   labelFormatter={(label) => `Data: ${label}`}
                 />
                 <Bar dataKey="producao" fill="#3b82f6" />
               </BarChart>
             </ResponsiveContainer>
-          ) : (
-            <div className="flex items-center justify-center h-64 text-muted-foreground">
-              <div className="text-center">
-                <BarChart className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>Nenhum dado encontrado para o período selecionado</p>
-                <p className="text-sm">Ajuste os filtros para visualizar os dados</p>
-              </div>
-            </div>
-          )}
+          </div>
         </CardContent>
       </Card>
 
-      {/* Debug Info */}
-      {process.env.NODE_ENV === 'development' && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Debug Info</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-sm space-y-2">
-              <p><strong>Total de registros carregados:</strong> {registros.length}</p>
-              <p><strong>Registros após filtros:</strong> {registrosFiltrados.length}</p>
-              <p><strong>Filtros ativos:</strong> {JSON.stringify(filtros)}</p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Lista de Registros */}
+      <Card>
+        <CardHeader>
+          <CardTitle>📋 Registros Detalhados</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {registrosFiltrados.map((registro) => (
+              <div key={registro.id} className="border rounded p-4 bg-gray-50">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div>
+                    <strong>Data:</strong> {new Date(registro.data).toLocaleDateString('pt-BR')}
+                  </div>
+                  <div>
+                    <strong>Operador:</strong> {registro.operador || 'N/A'}
+                  </div>
+                  <div>
+                    <strong>Turno:</strong> {registro.turno || 'N/A'}
+                  </div>
+                  <div>
+                    <strong>Produção:</strong> {registro.toneladas || 0}t
+                  </div>
+                  <div>
+                    <strong>Tempo Efetivo:</strong> {registro.tempoEfetivo || 'N/A'}
+                  </div>
+                  <div>
+                    <strong>Produção/h:</strong> {registro.producaoPorHora || 0}t/h
+                  </div>
+                  <div>
+                    <strong>Paradas:</strong> {registro.paradas ? registro.paradas.length : 0}
+                  </div>
+                  <div>
+                    <strong>Visto:</strong> {registro.visto || 'N/A'}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
