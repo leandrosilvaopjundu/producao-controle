@@ -7,7 +7,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
 import { Trash2, Plus, Save, Clock, Calculator } from 'lucide-react'
-import ReportGenerator from './ReportGenerator.jsx'
 import { salvarRegistro } from '../services/firebaseService.js'
 
 const OperatorDashboard = () => {
@@ -468,37 +467,57 @@ const OperatorDashboard = () => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="p-4 bg-blue-50 rounded-lg">
-              <div className="text-sm text-blue-600 font-medium">Tempo Efetivo</div>
-              <div className="text-2xl font-bold text-blue-800">{calcularTempoEfetivo()}</div>
+            <div className="text-center p-4 bg-blue-50 rounded-lg">
+              <div className="text-2xl font-bold text-blue-600">{calcularTempoEfetivo()}</div>
+              <div className="text-sm text-gray-600">Tempo Efetivo</div>
             </div>
-            <div className="p-4 bg-green-50 rounded-lg">
-              <div className="text-sm text-green-600 font-medium flex items-center gap-2">
-                <Calculator className="h-4 w-4" />
-                Produção por Hora
-              </div>
-              <div className="text-2xl font-bold text-green-800">{calcularProducaoPorHora()} t/h</div>
+            <div className="text-center p-4 bg-green-50 rounded-lg">
+              <div className="text-2xl font-bold text-green-600">{calcularProducaoPorHora()} t/h</div>
+              <div className="text-sm text-gray-600">Produção por Hora</div>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Gerador de Relatório */}
-      <ReportGenerator formData={{
-        ...formData,
-        silos,
-        paradas,
-        testeZeroGraos,
-        observacoes,
-        tempoEfetivo: calcularTempoEfetivo(),
-        producaoPorHora: calcularProducaoPorHora()
-      }} />
+      {/* Gerador de Relatório PDF */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            📄 Gerar Relatório
+          </CardTitle>
+          <CardDescription>
+            Gere um relatório com os dados preenchidos no formato PDF ou JPG
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="formato">Formato do Arquivo</Label>
+              <Select defaultValue="pdf">
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pdf">PDF - Documento</SelectItem>
+                  <SelectItem value="jpg">JPG - Imagem</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-end">
+              <Button className="w-full" onClick={() => alert('Funcionalidade de relatório será implementada em breve!')}>
+                <Save className="h-4 w-4 mr-2" />
+                Gerar e Baixar Relatório PDF
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Botão Salvar */}
       <Card>
         <CardContent className="pt-6">
           <Button onClick={salvarDados} className="w-full" size="lg">
-            <Save className="h-5 w-5 mr-2" />
+            <Save className="h-4 w-4 mr-2" />
             Salvar Dados
           </Button>
         </CardContent>
