@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import OperatorDashboard from './components/OperatorDashboard'
-import RelatoriosDashboard from './components/RelatoriosDashboard'
+import Relatorios from './components/Relatorios'
 import HistoricoRegistros from './components/HistoricoRegistros'
 import { Button } from './components/ui/button'
 import './App.css'
@@ -13,7 +13,7 @@ function App() {
       case 'novo-registro':
         return <OperatorDashboard />
       case 'relatorios':
-        return <RelatoriosDashboard />
+        return <Relatorios />
       case 'historico':
         return <HistoricoRegistros />
       default:
@@ -68,4 +68,3 @@ function App() {
 }
 
 export default App
-
