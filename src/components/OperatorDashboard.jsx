@@ -180,7 +180,7 @@ const OperatorDashboard = () => {
     return producaoPorHora.toFixed(2)
   }
 
-  // Função para gerar relatório PDF com logo - CORRIGIDA
+  // Função para gerar relatório PDF com formato EXATO
   const generateReport = async () => {
     setIsGenerating(true)
     
@@ -200,9 +200,10 @@ const OperatorDashboard = () => {
       reportElement.style.fontSize = '12px'
       reportElement.style.lineHeight = '1.4'
       
-      // Calcular quantas linhas mostrar (dados + algumas extras)
-      const linhasTesteZeroGrao = Math.max(testeZeroGraos.length + 2, 4) // Mínimo 4, máximo dados + 2
-      const linhasParadas = Math.max(paradas.length + 1, 3) // Mínimo 3, máximo dados + 1
+      // Calcular linhas EXATAS - só dados + mínimo necessário
+      const totalTestes = testeZeroGraos.length
+      const linhasTesteZeroGrao = Math.ceil(totalTestes / 3) + 1 // Dados divididos por 3 colunas + 1 linha extra
+      const linhasParadas = paradas.length // EXATAMENTE só as paradas inseridas
       
       // Conteúdo do relatório
       reportElement.innerHTML = `
@@ -267,21 +268,21 @@ const OperatorDashboard = () => {
             </table>
           </div>
 
-          <!-- Teste Zero Grão - CORRIGIDO -->
+          <!-- Teste Zero Grão - FORMATO EXATO -->
           <div style="margin-bottom: 20px;">
             <div style="text-align: center; font-weight: bold; margin-bottom: 10px;">Teste Zero Grão</div>
             <table style="width: 100%; border-collapse: collapse;">
               <thead>
                 <tr>
-                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0; width: 12%;">Horário</th>
-                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0; width: 12%;">Status</th>
-                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0; width: 15%;">Resultado</th>
-                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0; width: 12%;">Horário</th>
-                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0; width: 12%;">Status</th>
-                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0; width: 15%;">Resultado</th>
-                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0; width: 12%;">Horário</th>
-                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0; width: 10%;">Status</th>
-                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0; width: 10%;">Resultado</th>
+                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0; width: 11%;">Horário</th>
+                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0; width: 11%;">Status</th>
+                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0; width: 11%;">Resultado</th>
+                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0; width: 11%;">Horário</th>
+                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0; width: 11%;">Status</th>
+                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0; width: 11%;">Resultado</th>
+                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0; width: 11%;">Horário</th>
+                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0; width: 11%;">Status</th>
+                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0; width: 12%;">Resultado</th>
                 </tr>
               </thead>
               <tbody>
@@ -307,7 +308,7 @@ const OperatorDashboard = () => {
             </table>
           </div>
 
-          <!-- Paradas Operacionais - CORRIGIDO -->
+          <!-- Paradas Operacionais - FORMATO EXATO (SÓ DADOS INSERIDOS) -->
           <div style="margin-bottom: 20px;">
             <div style="text-align: center; font-weight: bold; margin-bottom: 10px;">Paradas Operacionais</div>
             <table style="width: 100%; border-collapse: collapse;">
@@ -320,17 +321,14 @@ const OperatorDashboard = () => {
                 </tr>
               </thead>
               <tbody>
-                ${Array.from({length: linhasParadas}, (_, i) => {
-                  const parada = paradas[i] || {}
-                  return `
-                    <tr>
-                      <td style="border: 1px solid #000; padding: 5px; text-align: center;">${parada.inicio || ''}</td>
-                      <td style="border: 1px solid #000; padding: 5px; text-align: center;">${parada.fim || ''}</td>
-                      <td style="border: 1px solid #000; padding: 5px; text-align: center;">${parada.duracao || ''}</td>
-                      <td style="border: 1px solid #000; padding: 5px;">${parada.motivo || ''}</td>
-                    </tr>
-                  `
-                }).join('')}
+                ${paradas.map(parada => `
+                  <tr>
+                    <td style="border: 1px solid #000; padding: 5px; text-align: center;">${parada.inicio}</td>
+                    <td style="border: 1px solid #000; padding: 5px; text-align: center;">${parada.fim}</td>
+                    <td style="border: 1px solid #000; padding: 5px; text-align: center;">${parada.duracao}</td>
+                    <td style="border: 1px solid #000; padding: 5px;">${parada.motivo}</td>
+                  </tr>
+                `).join('')}
               </tbody>
             </table>
           </div>
