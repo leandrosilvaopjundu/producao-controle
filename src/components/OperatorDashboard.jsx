@@ -41,7 +41,7 @@ const OperatorDashboard = () => {
   const [testeZeroGraos, setTesteZeroGraos] = useState([])
   const [novoTeste, setNovoTeste] = useState({
     horario: '',
-    analise: 'OK',
+    status: 'Sim',
     resultado: ''
   })
 
@@ -117,11 +117,11 @@ const OperatorDashboard = () => {
       const minutos = Math.floor((duracaoMs % (1000 * 60 * 60)) / (1000 * 60))
       const duracao = `${horas.toString().padStart(2, '0')}:${minutos.toString().padStart(2, '0')}`
 
-      setParadas(prev => [...prev, {
+      setParadas(prev => [{ // Adicionar no início (ordem reversa)
         id: Date.now(),
         ...novaParada,
         duracao
-      }])
+      }, ...prev])
       
       setNovaParada({ inicio: '', fim: '', motivo: '' })
     }
@@ -133,12 +133,12 @@ const OperatorDashboard = () => {
 
   const adicionarTesteZeroGraos = () => {
     if (novoTeste.horario) {
-      setTesteZeroGraos(prev => [...prev, {
+      setTesteZeroGraos(prev => [{ // Adicionar no início (ordem reversa)
         id: Date.now(),
         ...novoTeste
-      }])
+      }, ...prev])
       
-      setNovoTeste({ horario: '', analise: 'OK', resultado: '' })
+      setNovoTeste({ horario: '', status: 'Sim', resultado: '' })
     }
   }
 
@@ -180,7 +180,7 @@ const OperatorDashboard = () => {
     return producaoPorHora.toFixed(2)
   }
 
-  // Função para gerar relatório PDF com logo
+  // Função para gerar relatório PDF com logo - CORRIGIDA
   const generateReport = async () => {
     setIsGenerating(true)
     
@@ -199,6 +199,10 @@ const OperatorDashboard = () => {
       reportElement.style.fontFamily = 'Arial, sans-serif'
       reportElement.style.fontSize = '12px'
       reportElement.style.lineHeight = '1.4'
+      
+      // Calcular quantas linhas mostrar (dados + algumas extras)
+      const linhasTesteZeroGrao = Math.max(testeZeroGraos.length + 2, 4) // Mínimo 4, máximo dados + 2
+      const linhasParadas = Math.max(paradas.length + 1, 3) // Mínimo 3, máximo dados + 1
       
       // Conteúdo do relatório
       reportElement.innerHTML = `
@@ -263,32 +267,39 @@ const OperatorDashboard = () => {
             </table>
           </div>
 
-          <!-- Teste Zero Grão -->
+          <!-- Teste Zero Grão - CORRIGIDO -->
           <div style="margin-bottom: 20px;">
             <div style="text-align: center; font-weight: bold; margin-bottom: 10px;">Teste Zero Grão</div>
             <table style="width: 100%; border-collapse: collapse;">
               <thead>
                 <tr>
-                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0; width: 15%;">Horário</th>
-                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0; width: 15%;">Análise</th>
-                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0; width: 20%;">Resultado</th>
-                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0; width: 15%;">Horário</th>
-                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0; width: 15%;">Análise</th>
-                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0; width: 20%;">Resultado</th>
+                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0; width: 12%;">Horário</th>
+                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0; width: 12%;">Status</th>
+                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0; width: 15%;">Resultado</th>
+                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0; width: 12%;">Horário</th>
+                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0; width: 12%;">Status</th>
+                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0; width: 15%;">Resultado</th>
+                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0; width: 12%;">Horário</th>
+                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0; width: 10%;">Status</th>
+                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0; width: 10%;">Resultado</th>
                 </tr>
               </thead>
               <tbody>
-                ${Array.from({length: 8}, (_, i) => {
-                  const teste1 = testeZeroGraos[i * 2] || {}
-                  const teste2 = testeZeroGraos[i * 2 + 1] || {}
+                ${Array.from({length: linhasTesteZeroGrao}, (_, i) => {
+                  const teste1 = testeZeroGraos[i * 3] || {}
+                  const teste2 = testeZeroGraos[i * 3 + 1] || {}
+                  const teste3 = testeZeroGraos[i * 3 + 2] || {}
                   return `
                     <tr>
                       <td style="border: 1px solid #000; padding: 5px; text-align: center;">${teste1.horario || ''}</td>
-                      <td style="border: 1px solid #000; padding: 5px; text-align: center;">${teste1.analise || ''}</td>
+                      <td style="border: 1px solid #000; padding: 5px; text-align: center;">${teste1.status || ''}</td>
                       <td style="border: 1px solid #000; padding: 5px; text-align: center;">${teste1.resultado || ''}</td>
                       <td style="border: 1px solid #000; padding: 5px; text-align: center;">${teste2.horario || ''}</td>
-                      <td style="border: 1px solid #000; padding: 5px; text-align: center;">${teste2.analise || ''}</td>
+                      <td style="border: 1px solid #000; padding: 5px; text-align: center;">${teste2.status || ''}</td>
                       <td style="border: 1px solid #000; padding: 5px; text-align: center;">${teste2.resultado || ''}</td>
+                      <td style="border: 1px solid #000; padding: 5px; text-align: center;">${teste3.horario || ''}</td>
+                      <td style="border: 1px solid #000; padding: 5px; text-align: center;">${teste3.status || ''}</td>
+                      <td style="border: 1px solid #000; padding: 5px; text-align: center;">${teste3.resultado || ''}</td>
                     </tr>
                   `
                 }).join('')}
@@ -296,7 +307,7 @@ const OperatorDashboard = () => {
             </table>
           </div>
 
-          <!-- Paradas Operacionais -->
+          <!-- Paradas Operacionais - CORRIGIDO -->
           <div style="margin-bottom: 20px;">
             <div style="text-align: center; font-weight: bold; margin-bottom: 10px;">Paradas Operacionais</div>
             <table style="width: 100%; border-collapse: collapse;">
@@ -309,7 +320,7 @@ const OperatorDashboard = () => {
                 </tr>
               </thead>
               <tbody>
-                ${Array.from({length: 8}, (_, i) => {
+                ${Array.from({length: linhasParadas}, (_, i) => {
                   const parada = paradas[i] || {}
                   return `
                     <tr>
@@ -548,7 +559,7 @@ const OperatorDashboard = () => {
         </CardContent>
       </Card>
 
-      {/* Teste Zero Grãos - REFORMULADO */}
+      {/* Teste Zero Grãos - REFORMULADO COM BARRA DE ROLAGEM */}
       <Card>
         <CardHeader>
           <CardTitle>🧪 Teste Zero Grãos</CardTitle>
@@ -565,17 +576,17 @@ const OperatorDashboard = () => {
               />
             </div>
             <div>
-              <Label htmlFor="teste-analise">Análise</Label>
+              <Label htmlFor="teste-status">Status</Label>
               <Select 
-                value={novoTeste.analise} 
-                onValueChange={(value) => setNovoTeste(prev => ({ ...prev, analise: value }))}
+                value={novoTeste.status} 
+                onValueChange={(value) => setNovoTeste(prev => ({ ...prev, status: value }))}
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="OK">OK</SelectItem>
-                  <SelectItem value="R">R</SelectItem>
+                  <SelectItem value="Sim">Sim</SelectItem>
+                  <SelectItem value="Não">Não</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -600,13 +611,13 @@ const OperatorDashboard = () => {
           {testeZeroGraos.length > 0 && (
             <div className="space-y-2">
               <h4 className="font-medium text-sm">Testes Registrados:</h4>
-              <div className="space-y-1">
+              <div className="max-h-40 overflow-y-auto space-y-1 border rounded p-2">
                 {testeZeroGraos.map(teste => (
                   <div key={teste.id} className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm">
                     <div className="flex items-center gap-3">
                       <Badge variant="outline" className="text-xs">{teste.horario}</Badge>
-                      <Badge variant={teste.analise === 'OK' ? 'default' : 'destructive'} className="text-xs">
-                        {teste.analise}
+                      <Badge variant={teste.status === 'Sim' ? 'default' : 'destructive'} className="text-xs">
+                        {teste.status}
                       </Badge>
                       {teste.resultado && (
                         <span className="text-gray-600 font-medium">Resultado: {teste.resultado}</span>
@@ -741,7 +752,7 @@ const OperatorDashboard = () => {
         </CardContent>
       </Card>
 
-      {/* Gerador de Relatório PDF - FUNCIONAL */}
+      {/* Gerador de Relatório PDF - FUNCIONAL COM BOTÃO DINÂMICO */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
