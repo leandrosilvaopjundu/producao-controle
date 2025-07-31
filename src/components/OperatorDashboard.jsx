@@ -117,11 +117,11 @@ const OperatorDashboard = () => {
       const minutos = Math.floor((duracaoMs % (1000 * 60 * 60)) / (1000 * 60))
       const duracao = `${horas.toString().padStart(2, '0')}:${minutos.toString().padStart(2, '0')}`
 
-      setParadas(prev => [{ // Adicionar no início (ordem reversa)
+      setParadas(prev => [...prev, { // ORDEM NORMAL - adicionar no final
         id: Date.now(),
         ...novaParada,
         duracao
-      }, ...prev])
+      }])
       
       setNovaParada({ inicio: '', fim: '', motivo: '' })
     }
@@ -180,7 +180,7 @@ const OperatorDashboard = () => {
     return producaoPorHora.toFixed(2)
   }
 
-  // Função para gerar relatório PDF com formato EXATO
+  // Função para gerar relatório PDF com formato CORRETO do Teste Zero Grão
   const generateReport = async () => {
     setIsGenerating(true)
     
@@ -200,10 +200,10 @@ const OperatorDashboard = () => {
       reportElement.style.fontSize = '12px'
       reportElement.style.lineHeight = '1.4'
       
-      // Calcular linhas EXATAS - só dados + mínimo necessário
+      // Calcular linhas para Teste Zero Grão (máximo de testes por linha)
       const totalTestes = testeZeroGraos.length
-      const linhasTesteZeroGrao = Math.ceil(totalTestes / 3) + 1 // Dados divididos por 3 colunas + 1 linha extra
-      const linhasParadas = paradas.length // EXATAMENTE só as paradas inseridas
+      const testesOrdenados = [...testeZeroGraos].reverse() // Ordem normal (primeiro inserido primeiro)
+      const linhasTesteZeroGrao = Math.ceil(totalTestes / 3) || 1 // Mínimo 1 linha
       
       // Conteúdo do relatório
       reportElement.innerHTML = `
@@ -268,28 +268,36 @@ const OperatorDashboard = () => {
             </table>
           </div>
 
-          <!-- Teste Zero Grão - FORMATO EXATO -->
+          <!-- Teste Zero Grão - FORMATO CORRETO -->
           <div style="margin-bottom: 20px;">
             <div style="text-align: center; font-weight: bold; margin-bottom: 10px;">Teste Zero Grão</div>
             <table style="width: 100%; border-collapse: collapse;">
               <thead>
                 <tr>
-                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0; width: 11%;">Horário</th>
-                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0; width: 11%;">Status</th>
-                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0; width: 11%;">Resultado</th>
-                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0; width: 11%;">Horário</th>
-                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0; width: 11%;">Status</th>
-                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0; width: 11%;">Resultado</th>
-                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0; width: 11%;">Horário</th>
-                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0; width: 11%;">Status</th>
-                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0; width: 12%;">Resultado</th>
+                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0; width: 15%;">Horário</th>
+                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0; width: 18%;" colspan="2">Análise</th>
+                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0; width: 15%;">Horário</th>
+                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0; width: 18%;" colspan="2">Análise</th>
+                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0; width: 15%;">Horário</th>
+                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0; width: 19%;" colspan="2">Análise</th>
+                </tr>
+                <tr>
+                  <th style="border: 1px solid #000; padding: 3px; background-color: #f0f0f0; font-size: 10px;"></th>
+                  <th style="border: 1px solid #000; padding: 3px; background-color: #f0f0f0; font-size: 10px; width: 9%;">Status</th>
+                  <th style="border: 1px solid #000; padding: 3px; background-color: #f0f0f0; font-size: 10px; width: 9%;">Resultado</th>
+                  <th style="border: 1px solid #000; padding: 3px; background-color: #f0f0f0; font-size: 10px;"></th>
+                  <th style="border: 1px solid #000; padding: 3px; background-color: #f0f0f0; font-size: 10px; width: 9%;">Status</th>
+                  <th style="border: 1px solid #000; padding: 3px; background-color: #f0f0f0; font-size: 10px; width: 9%;">Resultado</th>
+                  <th style="border: 1px solid #000; padding: 3px; background-color: #f0f0f0; font-size: 10px;"></th>
+                  <th style="border: 1px solid #000; padding: 3px; background-color: #f0f0f0; font-size: 10px; width: 9%;">Status</th>
+                  <th style="border: 1px solid #000; padding: 3px; background-color: #f0f0f0; font-size: 10px; width: 10%;">Resultado</th>
                 </tr>
               </thead>
               <tbody>
                 ${Array.from({length: linhasTesteZeroGrao}, (_, i) => {
-                  const teste1 = testeZeroGraos[i * 3] || {}
-                  const teste2 = testeZeroGraos[i * 3 + 1] || {}
-                  const teste3 = testeZeroGraos[i * 3 + 2] || {}
+                  const teste1 = testesOrdenados[i * 3] || {}
+                  const teste2 = testesOrdenados[i * 3 + 1] || {}
+                  const teste3 = testesOrdenados[i * 3 + 2] || {}
                   return `
                     <tr>
                       <td style="border: 1px solid #000; padding: 5px; text-align: center;">${teste1.horario || ''}</td>
@@ -308,7 +316,7 @@ const OperatorDashboard = () => {
             </table>
           </div>
 
-          <!-- Paradas Operacionais - FORMATO EXATO (SÓ DADOS INSERIDOS) -->
+          <!-- Paradas Operacionais - ORDEM NORMAL -->
           <div style="margin-bottom: 20px;">
             <div style="text-align: center; font-weight: bold; margin-bottom: 10px;">Paradas Operacionais</div>
             <table style="width: 100%; border-collapse: collapse;">
