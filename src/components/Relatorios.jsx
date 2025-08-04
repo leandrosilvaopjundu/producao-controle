@@ -3,7 +3,7 @@ import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 
 const Relatorios = () => {
   const [registros, setRegistros] = useState([]);
@@ -14,6 +14,9 @@ const Relatorios = () => {
     turno: 'todos'
   });
   const [registrosFiltrados, setRegistrosFiltrados] = useState([]);
+
+  // Cores para o gráfico de pizza
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D', '#FFC658', '#FF7C7C', '#8DD1E1', '#D084D0'];
 
   // Carregar registros do Firebase
   useEffect(() => {
@@ -117,7 +120,7 @@ const Relatorios = () => {
     };
   };
 
-  // Preparar dados para o gráfico
+  // Preparar dados para o gráfico de barras
   const prepararDadosGrafico = () => {
     return registrosFiltrados.map(registro => ({
       data: new Date(registro.data).toLocaleDateString('pt-BR'),
@@ -126,8 +129,46 @@ const Relatorios = () => {
     }));
   };
 
+  // Preparar dados para o gráfico de pizza das paradas
+  const prepararDadosGraficoPizza = () => {
+    const dadosParadas = {};
+    let totalMinutos = 0;
+
+    registrosFiltrados.forEach(registro => {
+      if (registro.paradas && Array.isArray(registro.paradas)) {
+        registro.paradas.forEach(parada => {
+          const motivo = parada.motivo || 'Não especificado';
+          
+          // Calcular duração em minutos
+          let minutos = 0;
+          if (parada.duracao) {
+            const [h, m] = parada.duracao.split(':').map(Number);
+            minutos = h * 60 + m;
+          }
+
+          if (dadosParadas[motivo]) {
+            dadosParadas[motivo] += minutos;
+          } else {
+            dadosParadas[motivo] = minutos;
+          }
+          
+          totalMinutos += minutos;
+        });
+      }
+    });
+
+    // Converter para formato do gráfico
+    return Object.entries(dadosParadas).map(([motivo, minutos]) => ({
+      name: motivo,
+      value: minutos,
+      porcentagem: totalMinutos > 0 ? ((minutos / totalMinutos) * 100).toFixed(1) : 0,
+      tempo: `${Math.floor(minutos / 60)}h${(minutos % 60).toString().padStart(2, '0')}m`
+    })).sort((a, b) => b.value - a.value); // Ordenar por tempo decrescente
+  };
+
   const estatisticas = calcularEstatisticas();
   const dadosGrafico = prepararDadosGrafico();
+  const dadosGraficoPizza = prepararDadosGraficoPizza();
 
   if (loading) {
     return (
@@ -238,28 +279,104 @@ const Relatorios = () => {
         </Card>
       </div>
 
-      {/* Gráfico */}
-      <Card>
-        <CardHeader>
-          <CardTitle>📈 Gráfico de Produção por Data</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={dadosGrafico}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="data" />
-                <YAxis />
-                <Tooltip 
-                  formatter={(value, name) => [`${value}t`, 'Produção']}
-                  labelFormatter={(label) => `Data: ${label}`}
-                />
-                <Bar dataKey="producao" fill="#3b82f6" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Gráficos lado a lado */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Gráfico de Produção por Data */}
+        <Card>
+          <CardHeader>
+            <CardTitle>📈 Gráfico de Produção por Data</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={dadosGrafico}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="data" />
+                  <YAxis />
+                  <Tooltip 
+                    formatter={(value, name) => [`${value}t`, 'Produção']}
+                    labelFormatter={(label) => `Data: ${label}`}
+                  />
+                  <Bar dataKey="producao" fill="#3b82f6" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Gráfico de Pizza das Paradas */}
+        <Card>
+          <CardHeader>
+            <CardTitle>🍕 Distribuição de Paradas Operacionais</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {dadosGraficoPizza.length > 0 ? (
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={dadosGraficoPizza}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, porcentagem }) => `${name}: ${porcentagem}%`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {dadosGraficoPizza.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      formatter={(value, name) => [`${Math.floor(value / 60)}h${(value % 60).toString().padStart(2, '0')}m`, 'Tempo']}
+                    />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="h-64 flex items-center justify-center text-gray-500">
+                <div className="text-center">
+                  <div className="text-4xl mb-2">📊</div>
+                  <p>Nenhuma parada registrada no período selecionado</p>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Tabela detalhada das paradas (se houver dados) */}
+      {dadosGraficoPizza.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>📋 Detalhamento das Paradas</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse border border-gray-300">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="border border-gray-300 px-4 py-2 text-left">Motivo da Parada</th>
+                    <th className="border border-gray-300 px-4 py-2 text-center">Tempo Total</th>
+                    <th className="border border-gray-300 px-4 py-2 text-center">Porcentagem</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dadosGraficoPizza.map((item, index) => (
+                    <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                      <td className="border border-gray-300 px-4 py-2">{item.name}</td>
+                      <td className="border border-gray-300 px-4 py-2 text-center">{item.tempo}</td>
+                      <td className="border border-gray-300 px-4 py-2 text-center">{item.porcentagem}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Lista de Registros */}
       <Card>

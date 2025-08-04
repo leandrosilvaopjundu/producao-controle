@@ -4,9 +4,9 @@ import { Button } from '@/components/ui/button.jsx'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
 import { Separator } from '@/components/ui/separator.jsx'
-import { Calendar, Clock, User, Package, AlertCircle, CheckCircle, RefreshCw, Eye, EyeOff } from 'lucide-react'
+import { Calendar, Clock, User, Package, AlertCircle, CheckCircle, RefreshCw, Eye, EyeOff, Edit } from 'lucide-react'
 
-const HistoricoRegistros = () => {
+const HistoricoRegistros = ({ onEditarRegistro }) => {
   const [registros, setRegistros] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -71,6 +71,43 @@ const HistoricoRegistros = () => {
 
   const toggleExpanded = (id) => {
     setExpandedId(expandedId === id ? null : id)
+  }
+
+  // NOVA FUNCIONALIDADE: Editar registro
+  const editarRegistro = (registro) => {
+    if (onEditarRegistro) {
+      // Preparar dados do registro para edição
+      const dadosParaEdicao = {
+        id: registro.id,
+        data: registro.data || new Date().toISOString().split('T')[0],
+        operador: registro.operador || '',
+        visto: registro.visto || '',
+        hp: registro.hp || '00:00',
+        toneladas: registro.toneladas || '',
+        turno: registro.turno || '',
+        horarioTurno: registro.horarioTurno || '',
+        siloSelecionado: registro.siloSelecionado || '',
+        horasExtras: registro.horasExtras || '00:00',
+        silos: registro.silos || [
+          { id: 1, nome: 'Silo 1 - CN #09', estoque: '', horasTrabalhadas: '' },
+          { id: 2, nome: 'Silo 2 - CN #09', estoque: '', horasTrabalhadas: '' },
+          { id: 3, nome: 'Silo 3 - CE #09', estoque: '', horasTrabalhadas: '' },
+          { id: 4, nome: 'Silo 4 - CE #16', estoque: '', horasTrabalhadas: '' },
+          { id: 5, nome: 'Silo 5 CN #09', estoque: '', horasTrabalhadas: '' }
+        ],
+        paradas: registro.paradas || [],
+        testeZeroGraos: registro.testeZeroGraos || [],
+        observacoes: registro.observacoes || ''
+      }
+      
+      // Chamar função de callback para editar
+      onEditarRegistro(dadosParaEdicao)
+      
+      // Mostrar mensagem de confirmação
+      alert('Registro carregado para edição! Vá para a aba "Novo Registro" para fazer as alterações.')
+    } else {
+      alert('Funcionalidade de edição não está disponível. Verifique se o componente pai está configurado corretamente.')
+    }
   }
 
   if (loading) {
@@ -166,6 +203,16 @@ const HistoricoRegistros = () => {
                     <Badge variant="outline" className="text-sm font-medium">
                       {registro.producaoPorHora || calcularProducaoHora(registro.toneladas, registro.tempoEfetivo)} t/h
                     </Badge>
+                    {/* NOVO: Botão de Editar */}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => editarRegistro(registro)}
+                      className="text-green-600 hover:text-green-800 border-green-300 hover:border-green-500"
+                    >
+                      <Edit className="h-4 w-4 mr-1" />
+                      Editar
+                    </Button>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -200,6 +247,9 @@ const HistoricoRegistros = () => {
                         <p><span className="font-medium">Visto:</span> {registro.visto || 'Não informado'}</p>
                         <p><span className="font-medium">Turno:</span> {registro.turno || 'Não informado'}</p>
                         <p><span className="font-medium">HP:</span> {registro.hp || 'Não informado'}</p>
+                        {registro.horasExtras && registro.horasExtras !== '00:00' && (
+                          <p><span className="font-medium">Horas Extras:</span> {registro.horasExtras}</p>
+                        )}
                       </div>
                     </div>
 
@@ -209,6 +259,12 @@ const HistoricoRegistros = () => {
                         <p><span className="font-medium">Toneladas:</span> {registro.toneladas || '0'}</p>
                         <p><span className="font-medium">Tempo Efetivo:</span> {registro.tempoEfetivo || '00:00'}</p>
                         <p><span className="font-medium">Produção/Hora:</span> {registro.producaoPorHora || calcularProducaoHora(registro.toneladas, registro.tempoEfetivo)} t/h</p>
+                        {registro.paradas && registro.paradas.length > 0 && (
+                          <p><span className="font-medium">Paradas:</span> {registro.paradas.length}</p>
+                        )}
+                        {registro.testeZeroGraos && registro.testeZeroGraos.length > 0 && (
+                          <p><span className="font-medium">Testes Zero Grãos:</span> {registro.testeZeroGraos.length}</p>
+                        )}
                       </div>
                     </div>
 
@@ -224,6 +280,38 @@ const HistoricoRegistros = () => {
                       </div>
                     </div>
                   </div>
+
+                  {/* Mostrar detalhes dos silos se existirem */}
+                  {registro.silos && registro.silos.some(silo => silo.estoque || silo.horasTrabalhadas) && (
+                    <div className="mt-4 space-y-2">
+                      <h4 className="font-semibold text-sm text-gray-700">Estoque de Silos</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 text-sm">
+                        {registro.silos.filter(silo => silo.estoque || silo.horasTrabalhadas).map((silo, index) => (
+                          <div key={index} className="bg-gray-50 p-2 rounded">
+                            <p className="font-medium">{silo.nome}</p>
+                            {silo.estoque && <p>Estoque: {silo.estoque}t</p>}
+                            {silo.horasTrabalhadas && <p>Horas: {silo.horasTrabalhadas}</p>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Mostrar paradas se existirem */}
+                  {registro.paradas && registro.paradas.length > 0 && (
+                    <div className="mt-4 space-y-2">
+                      <h4 className="font-semibold text-sm text-gray-700">Paradas Operacionais</h4>
+                      <div className="space-y-1 text-sm">
+                        {registro.paradas.map((parada, index) => (
+                          <div key={index} className="bg-gray-50 p-2 rounded">
+                            <p><span className="font-medium">Horário:</span> {parada.inicio} - {parada.fim} ({parada.duracao})</p>
+                            <p><span className="font-medium">Motivo:</span> {parada.motivo}</p>
+                            {parada.observacao && <p><span className="font-medium">Observação:</span> {parada.observacao}</p>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {registro.observacoes && (
                     <div className="mt-4 space-y-2">

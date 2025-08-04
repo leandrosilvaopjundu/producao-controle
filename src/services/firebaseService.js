@@ -5,6 +5,7 @@ import {
   getDocs, 
   doc, 
   getDoc, 
+  updateDoc,
   query, 
   orderBy 
 } from 'firebase/firestore';
@@ -28,6 +29,27 @@ export const salvarRegistro = async (dados) => {
   } catch (error) {
     console.error("Erro ao salvar registro:", error);
     throw new Error(`Erro ao salvar: ${error.message}`);
+  }
+};
+
+// NOVA FUNÇÃO: Atualizar registro existente
+export const atualizarRegistro = async (id, dados) => {
+  try {
+    const docRef = doc(db, COLLECTION_NAME, id);
+    await updateDoc(docRef, {
+      ...dados,
+      timestamp: new Date().toISOString(),
+      updatedAt: new Date().toISOString() // Marca quando foi atualizado
+    });
+    
+    return {
+      success: true,
+      id: id,
+      message: "Registro atualizado com sucesso no Firebase!"
+    };
+  } catch (error) {
+    console.error("Erro ao atualizar registro:", error);
+    throw new Error(`Erro ao atualizar: ${error.message}`);
   }
 };
 
@@ -60,6 +82,11 @@ export const firebaseService = {
   // Salvar registro
   async salvarRegistro(dados) {
     return await salvarRegistro(dados);
+  },
+
+  // NOVA FUNCIONALIDADE: Atualizar registro
+  async atualizarRegistro(id, dados) {
+    return await atualizarRegistro(id, dados);
   },
 
   // Listar todos os registros
