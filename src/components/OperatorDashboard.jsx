@@ -325,6 +325,7 @@ const OperatorDashboard = ({ dadosEdicao, onNovoRegistro }) => {
       
       reportElement.innerHTML = `
         <div style="border: 2px solid #000; padding: 20px;">
+          <!-- Cabeçalho -->
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #000; padding-bottom: 10px;">
             <div style="border: 1px solid #000; padding: 10px; width: 120px; height: 60px; display: flex; align-items: center; justify-content: center;">
               <img src="${logoJundu}" alt="JUNDU" style="max-width: 100px; max-height: 50px; object-fit: contain;" />
