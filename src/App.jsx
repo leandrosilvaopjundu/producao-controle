@@ -66,7 +66,7 @@ function App() {
           <div className="flex space-x-1">
             <Button
               variant={activeTab === 'novo-registro' ? 'default' : 'ghost'}
-              onClick={() => setActiveTab('novo-registro')}
+              onClick={() => window.location.reload()}
               className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500"
             >
               ➕ Novo Registro
