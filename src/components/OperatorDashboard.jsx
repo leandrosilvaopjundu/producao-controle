@@ -395,13 +395,13 @@ const OperatorDashboard = ({ dadosEdicao, onNovoRegistro }) => {
               <thead>
                 <tr>
                   <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0;">Horário</th>
-                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0;">Zero Grão</th>
+                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0;">Análise</th>
                   <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0;">Resultado</th>
                   <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0;">Horário</th>
-                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0;">Zero Grão</th>
+                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0;">Análise</th>
                   <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0;">Resultado</th>
                   <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0;">Horário</th>
-                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0;">Zero Grão</th>
+                  <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0;">Análise</th>
                   <th style="border: 1px solid #000; padding: 5px; background-color: #f0f0f0;">Resultado</th>
                 </tr>
               </thead>
