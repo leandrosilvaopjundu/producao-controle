@@ -69,11 +69,14 @@ const Relatorios = () => {
       });
     }
 
-    // Filtro por turno
+    // CORREÇÃO: Filtro por turno - comparação flexível
     if (filtros.turno !== 'todos') {
-      registrosFiltrados = registrosFiltrados.filter(registro => 
-        registro.turno === parseInt(filtros.turno)
-      );
+      registrosFiltrados = registrosFiltrados.filter(registro => {
+        // Converte ambos para string para comparação
+        const turnoRegistro = String(registro.turno);
+        const turnoFiltro = String(filtros.turno);
+        return turnoRegistro === turnoFiltro;
+      });
     }
 
     setRegistrosFiltrados(registrosFiltrados);
