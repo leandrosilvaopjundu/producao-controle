@@ -173,6 +173,23 @@ const HistoricoDashboard = () => {
                 </div>
               )}
 
+              {/* Checklist de Equipamentos */}
+              {registro.checklist && registro.checklist.length > 0 && (
+                <div className="mt-4">
+                  <div className="text-sm font-medium text-gray-600 mb-2">Checklist de Equipamentos</div>
+                  <div className="flex flex-wrap gap-2">
+                    {registro.checklist.map((item, i) => (
+                      <Badge
+                        key={i}
+                        variant={item.situacao === 'OK' ? 'default' : 'destructive'}
+                      >
+                        {item.equipamento} - {item.situacao}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {registro.observacoes && (
                 <div className="mt-4">
                   <div className="text-sm font-medium text-gray-600 mb-1">Observações</div>

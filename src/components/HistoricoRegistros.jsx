@@ -97,7 +97,9 @@ const HistoricoRegistros = ({ onEditarRegistro }) => {
         ],
         paradas: registro.paradas || [],
         testeZeroGraos: registro.testeZeroGraos || [],
-        observacoes: registro.observacoes || ''
+        observacoes: registro.observacoes || '',
+        // Incluir checklist de equipamentos para edição
+        checklist: registro.checklist || []
       }
       
       // Chamar função de callback para editar
@@ -310,6 +312,34 @@ const HistoricoRegistros = ({ onEditarRegistro }) => {
                           </div>
                         ))}
                       </div>
+                    </div>
+                  )}
+
+                  {/* Mostrar checklist de equipamentos se existirem */}
+                  {registro.checklist && registro.checklist.length > 0 && (
+                    <div className="mt-4 space-y-2">
+                      <h4 className="font-semibold text-sm text-gray-700">Checklist de Equipamentos</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {registro.checklist.map((item, index) => (
+                          <Badge
+                            key={index}
+                            variant={item.situacao === 'OK' ? 'default' : 'destructive'}
+                          >
+                            {item.equipamento} - {item.situacao}
+                          </Badge>
+                        ))}
+                      </div>
+                      {registro.checklist.some(item => item.observacao) && (
+                        <div className="mt-2 space-y-1 text-sm">
+                          {registro.checklist.map((item, idx) => (
+                            item.observacao ? (
+                              <p key={idx}>
+                                <span className="font-medium">{item.equipamento}:</span> {item.observacao}
+                              </p>
+                            ) : null
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
 
