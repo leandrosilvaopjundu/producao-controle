@@ -1,5 +1,13 @@
 import React, { useState, useEffect } from 'react'
-import { firebaseService } from '../services/firebaseService'
+// Import our unified Firebase service.  It provides methods to list,
+// update, save and upload data to Firestore and Storage.  The service
+// resides in the same directory as this component, so we import it
+// relatively.  If the path differs in your project structure, adjust
+// accordingly.
+// Import the shared firebase service from the `services` folder.  Because
+// this component resides in `src/components`, we need to go up one level to
+// `src/services`.  Adjust this path according to your project structure.
+import { firebaseService } from '../services/firebaseService.js'
 import { Button } from '@/components/ui/button.jsx'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
@@ -269,6 +277,24 @@ const HistoricoRegistros = ({ onEditarRegistro }) => {
                         )}
                       </div>
                     </div>
+
+                    {/* Caso exista um PDF anexado (base64), exibe um botão para abrir em nova aba */}
+                    {registro.pdfData && (
+                      <div className="space-y-2">
+                        <h4 className="font-semibold text-sm text-gray-700">Relatório PDF</h4>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            // abre o PDF em nova janela/aba.  A URL inclui o prefixo data URI armazenado.
+                            window.open(registro.pdfData, '_blank')
+                          }}
+                          className="text-blue-600 hover:text-blue-800 border-blue-300 hover:border-blue-500"
+                        >
+                          Abrir PDF
+                        </Button>
+                      </div>
+                    )}
 
                     <div className="space-y-2">
                       <h4 className="font-semibold text-sm text-gray-700">Sistema</h4>

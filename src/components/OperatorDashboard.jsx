@@ -7,6 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
 import { Trash2, Plus, Save, FileDown, Edit, RefreshCw } from 'lucide-react'
+// Import functions from our unified Firebase service.  The service handles
+// saving e updating Firestore documents and uploading PDFs to Firebase
+// Storage.  Because this component is located inside `src/components`,
+// we need to traverse up one directory and into `services/firebaseService.js`.
+// Adjust the relative path if your project structure differs.
 import { salvarRegistro, atualizarRegistro } from '../services/firebaseService.js'
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
@@ -25,6 +30,13 @@ const OperatorDashboard_FUNCTION = ({ dadosEdicao, onNovoRegistro }) => {
   // Estados originais para controle de edição
   const [modoEdicao, setModoEdicao] = useState(false)
   const [idRegistroEdicao, setIdRegistroEdicao] = useState(null)
+
+  // Novo estado para armazenar o PDF gerado em formato Data URI.  Isso
+  // permite persistir o PDF no Firestore mesmo sem utilizar o Firebase
+  // Storage.  Note que armazenar PDFs no Firestore consome a cota de
+  // tamanho por documento (1 MiB); se seus relatórios ficarem maiores que
+  // isso, será necessário buscar outra solução.
+  const [pdfData, setPdfData] = useState(null)
 
   const [formData, setFormData] = useState({
     data: new Date().toISOString().split('T')[0],
@@ -637,7 +649,21 @@ const OperatorDashboard_FUNCTION = ({ dadosEdicao, onNovoRegistro }) => {
         }
         const dataAtual = new Date().toLocaleDateString('pt-BR').replace(/\//g, '_')
         const nomeArquivo = `controle_producao_${dataAtual}_turno${formData.turno || 'X'}.pdf`
+        // Salva o PDF localmente para o usuário
         pdf.save(nomeArquivo)
+        // Converte o PDF em Data URI para armazenar no estado.  O retorno
+        // inclui o prefixo `data:application/pdf;base64,`.  Armazenamos
+        // diretamente para que possa ser salvo no Firestore e exibido em
+        // um iframe.  Não tentamos enviar ao Storage porque o plano Spark
+        // não disponibiliza esse recurso.
+        try {
+          const dataUri = pdf.output('datauristring')
+          setPdfData(dataUri)
+          alert('PDF gerado! Ele será salvo junto com o registro.')
+        } catch (conversionError) {
+          console.error('Erro ao converter PDF para base64:', conversionError)
+          alert('Erro ao converter o PDF. O relatório será salvo sem o PDF anexado.')
+        }
       } else {
         const canvas = await html2canvas(reportElement, {
           scale: 2,
@@ -674,40 +700,47 @@ const OperatorDashboard_FUNCTION = ({ dadosEdicao, onNovoRegistro }) => {
         producaoPorHora: calcularProducaoPorHora(),
         resumoParadas: calcularResumoParadas(),
         checklist: checklistItems,
+        // Incluímos o PDF (data URI) se estiver disponível.  Caso contrário,
+        // o campo não é adicionado.
+        ...(pdfData ? { pdfData } : {}),
         timestamp: new Date().toISOString()
       }
       if (modoEdicao && idRegistroEdicao) {
+        // Atualiza o registro existente
         await atualizarRegistro(idRegistroEdicao, dadosCompletos)
         alert('Registro atualizado com sucesso!')
+        // Em modo edição não limpamos o formulário, permanecendo com os dados na tela
+        // Também não chamamos onNovoRegistro para manter o modo de edição ativo
       } else {
+        // Salva um novo registro
         await salvarRegistro(dadosCompletos)
         alert('Registro salvo com sucesso!')
-      }
-      // Limpa formulário após salvar/atualizar
-      setFormData({
-        data: new Date().toISOString().split('T')[0],
-        operador: '',
-        visto: '',
-        hp: '00:00',
-        toneladas: '',
-        turno: '',
-        horarioTurno: '',
-        siloSelecionado: '',
-        horasExtras: '00:00'
-      })
-      setParadas([])
-      setSilos([
-        { id: 1, nome: 'Silo 1 - CN #09', estoque: '', horasTrabalhadas: '' },
-        { id: 2, nome: 'Silo 2 - CN #09', estoque: '', horasTrabalhadas: '' },
-        { id: 3, nome: 'Silo 3 - CE #09', estoque: '', horasTrabalhadas: '' },
-        { id: 4, nome: 'Silo 4 - CE #16', estoque: '', horasTrabalhadas: '' },
-        { id: 5, nome: 'Silo 5 CN #09', estoque: '', horasTrabalhadas: '' }
-      ])
-      setTesteZeroGraos([])
-      setObservacoes('')
-      setChecklistItems([])
-      if (onNovoRegistro) {
-        onNovoRegistro()
+        // Limpa formulário após salvar um novo registro
+        setFormData({
+          data: new Date().toISOString().split('T')[0],
+          operador: '',
+          visto: '',
+          hp: '00:00',
+          toneladas: '',
+          turno: '',
+          horarioTurno: '',
+          siloSelecionado: '',
+          horasExtras: '00:00'
+        })
+        setParadas([])
+        setSilos([
+          { id: 1, nome: 'Silo 1 - CN #09', estoque: '', horasTrabalhadas: '' },
+          { id: 2, nome: 'Silo 2 - CN #09', estoque: '', horasTrabalhadas: '' },
+          { id: 3, nome: 'Silo 3 - CE #09', estoque: '', horasTrabalhadas: '' },
+          { id: 4, nome: 'Silo 4 - CE #16', estoque: '', horasTrabalhadas: '' },
+          { id: 5, nome: 'Silo 5 CN #09', estoque: '', horasTrabalhadas: '' }
+        ])
+        setTesteZeroGraos([])
+        setObservacoes('')
+        setChecklistItems([])
+        if (onNovoRegistro) {
+          onNovoRegistro()
+        }
       }
     } catch (error) {
       console.error('Erro ao salvar dados:', error)
