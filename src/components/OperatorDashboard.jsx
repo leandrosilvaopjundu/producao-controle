@@ -16,6 +16,23 @@ import { salvarRegistro, atualizarRegistro } from '../services/firebaseService.j
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 
+// URL base do backend: utiliza a variável de ambiente VITE_BACKEND_URL se
+// estiver definida. Caso contrário, assume http://localhost:5000. Este
+// valor é usado para enviar o PDF gerado ao servidor e receber um link
+// permanente. Em produção, configure VITE_BACKEND_URL nas variáveis de
+// ambiente do Vercel conforme seu domínio no Render.
+const backendBaseUrl =
+  typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_BACKEND_URL
+    ? import.meta.env.VITE_BACKEND_URL
+    : 'http://localhost:5000'
+
+  // A URL base para o backend é definida na constante ``backendBaseUrl`` acima.
+  // Para produção, configure a variável VITE_BACKEND_URL no arquivo .env do
+  // projeto (em Vercel) apontando para o domínio do backend (por exemplo,
+  // https://producao-controle-backend.onrender.com). Em desenvolvimento, o
+  // valor padrão http://localhost:5000 será utilizado.
+
+
 /**
  * Componente OperatorDashboard com checklist de equipamentos integrado.
  *
@@ -37,6 +54,10 @@ const OperatorDashboard_FUNCTION = ({ dadosEdicao, onNovoRegistro }) => {
   // tamanho por documento (1 MiB); se seus relatórios ficarem maiores que
   // isso, será necessário buscar outra solução.
   const [pdfData, setPdfData] = useState(null)
+
+  // Novo estado para armazenar a URL pública do PDF após envio ao backend.
+  // Se definido, esse link será salvo no Firestore e exibido no Histórico.
+  const [pdfUrl, setPdfUrl] = useState(null)
 
   const [formData, setFormData] = useState({
     data: new Date().toISOString().split('T')[0],
@@ -76,6 +97,10 @@ const OperatorDashboard_FUNCTION = ({ dadosEdicao, onNovoRegistro }) => {
   const [observacoes, setObservacoes] = useState('')
   const [selectedFormat, setSelectedFormat] = useState('pdf')
   const [isGenerating, setIsGenerating] = useState(false)
+
+  // A aplicação não utiliza mais o backend para geração de PDFs. O PDF é
+  // construído no próprio navegador usando html2canvas e jsPDF, como na
+  // versão original. Portanto, não precisamos definir a URL do backend aqui.
 
   // Novo: estados para checklist de equipamentos
   const [checklistItems, setChecklistItems] = useState([])
@@ -364,7 +389,7 @@ const OperatorDashboard_FUNCTION = ({ dadosEdicao, onNovoRegistro }) => {
   const generateReport = async () => {
     setIsGenerating(true)
     try {
-      // Cria um elemento para renderizar o conteúdo do relatório
+      // Cria um elemento para renderizar o conteúdo do relatório (para PDF ou JPG).
       const reportElement = document.createElement('div')
       reportElement.style.position = 'absolute'
       reportElement.style.left = '-9999px'
@@ -649,20 +674,48 @@ const OperatorDashboard_FUNCTION = ({ dadosEdicao, onNovoRegistro }) => {
         }
         const dataAtual = new Date().toLocaleDateString('pt-BR').replace(/\//g, '_')
         const nomeArquivo = `controle_producao_${dataAtual}_turno${formData.turno || 'X'}.pdf`
-        // Salva o PDF localmente para o usuário
+        // Salva o PDF localmente no navegador, para que o usuário tenha uma cópia imediata.
         pdf.save(nomeArquivo)
-        // Converte o PDF em Data URI para armazenar no estado.  O retorno
-        // inclui o prefixo `data:application/pdf;base64,`.  Armazenamos
-        // diretamente para que possa ser salvo no Firestore e exibido em
-        // um iframe.  Não tentamos enviar ao Storage porque o plano Spark
-        // não disponibiliza esse recurso.
+        // Tenta enviar o PDF ao backend para obter uma URL permanente. Caso ocorra
+        // qualquer erro, continua exibindo o PDF localmente através de data URI.
         try {
-          const dataUri = pdf.output('datauristring')
-          setPdfData(dataUri)
-          alert('PDF gerado! Ele será salvo junto com o registro.')
-        } catch (conversionError) {
-          console.error('Erro ao converter PDF para base64:', conversionError)
-          alert('Erro ao converter o PDF. O relatório será salvo sem o PDF anexado.')
+          const pdfBlob = pdf.output('blob')
+          const formDataUpload = new FormData()
+          formDataUpload.append('file', pdfBlob, nomeArquivo)
+          const response = await fetch(`${backendBaseUrl}/api/upload-pdf`, {
+            method: 'POST',
+            body: formDataUpload
+          })
+          const result = await response.json()
+          if (response.ok && result && result.url) {
+            // Armazena o link retornado pelo servidor para salvar no Firestore
+            setPdfUrl(result.url)
+            // Também salva a versão em base64 para compatibilidade com registros antigos
+            const dataUri = pdf.output('datauristring')
+            setPdfData(dataUri)
+            // Abre o PDF hospedado no backend em uma nova aba
+            window.open(result.url)
+            alert('PDF gerado e enviado ao servidor! Ele será salvo junto com o registro.')
+          } else {
+            console.error('Falha ao enviar PDF ao backend:', result.error || response.statusText)
+            // Se não houver link, cai no fallback base64
+            const dataUri = pdf.output('datauristring')
+            setPdfData(dataUri)
+            window.open(dataUri)
+            alert('PDF gerado localmente. Houve falha ao enviar ao servidor; o link não estará disponível.')
+          }
+        } catch (err) {
+          console.error('Erro ao enviar PDF ao backend:', err)
+          // Fallback: gera data URI e abre localmente
+          try {
+            const dataUri = pdf.output('datauristring')
+            setPdfData(dataUri)
+            window.open(dataUri)
+            alert('PDF gerado! Ele será salvo junto com o registro.')
+          } catch (convErr) {
+            console.error('Erro ao converter PDF para base64:', convErr)
+            alert('Erro ao gerar o PDF. O relatório será salvo sem o PDF anexado.')
+          }
         }
       } else {
         const canvas = await html2canvas(reportElement, {
@@ -700,9 +753,11 @@ const OperatorDashboard_FUNCTION = ({ dadosEdicao, onNovoRegistro }) => {
         producaoPorHora: calcularProducaoPorHora(),
         resumoParadas: calcularResumoParadas(),
         checklist: checklistItems,
-        // Incluímos o PDF (data URI) se estiver disponível.  Caso contrário,
-        // o campo não é adicionado.
-        ...(pdfData ? { pdfData } : {}),
+        // Incluímos o PDF apenas se houver uma URL ou Data URI.  A prioridade
+        // é salvar ``pdfUrl`` (link retornado pelo backend); caso não exista,
+        // utiliza-se ``pdfData`` como fallback. Se nenhum dos dois estiver
+        // disponível, o campo não é adicionado.
+        ...(pdfUrl ? { pdfUrl } : pdfData ? { pdfData } : {}),
         timestamp: new Date().toISOString()
       }
       if (modoEdicao && idRegistroEdicao) {

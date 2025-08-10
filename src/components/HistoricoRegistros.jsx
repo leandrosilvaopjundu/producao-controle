@@ -20,6 +20,7 @@ const HistoricoRegistros = ({ onEditarRegistro }) => {
   const [error, setError] = useState(null)
   const [expandedId, setExpandedId] = useState(null)
 
+
   const carregarRegistros = async () => {
     setLoading(true)
     setError(null)
@@ -278,16 +279,18 @@ const HistoricoRegistros = ({ onEditarRegistro }) => {
                       </div>
                     </div>
 
-                    {/* Caso exista um PDF anexado (base64), exibe um botão para abrir em nova aba */}
-                    {registro.pdfData && (
+                    {/* Caso exista um PDF anexado (data URI) ou um link retornado pelo backend,
+                     * exibe um botão para abrir o arquivo em nova aba. A prioridade é usar
+                     * ``pdfUrl`` (link permanente); se não existir, usa ``pdfData`` como fallback. */}
+                    {(registro.pdfUrl || registro.pdfData) && (
                       <div className="space-y-2">
                         <h4 className="font-semibold text-sm text-gray-700">Relatório PDF</h4>
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => {
-                            // abre o PDF em nova janela/aba.  A URL inclui o prefixo data URI armazenado.
-                            window.open(registro.pdfData, '_blank')
+                            const url = registro.pdfUrl || registro.pdfData
+                            window.open(url, '_blank')
                           }}
                           className="text-blue-600 hover:text-blue-800 border-blue-300 hover:border-blue-500"
                         >
