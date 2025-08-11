@@ -16,21 +16,23 @@ import { salvarRegistro, atualizarRegistro } from '../services/firebaseService.j
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 
-// URL base do backend: utiliza a variável de ambiente VITE_BACKEND_URL se
-// estiver definida. Caso contrário, assume http://localhost:5000. Este
-// valor é usado para enviar o PDF gerado ao servidor e receber um link
-// permanente. Em produção, configure VITE_BACKEND_URL nas variáveis de
-// ambiente do Vercel conforme seu domínio no Render.
+// URL base do backend: utiliza a variável de ambiente ``VITE_BACKEND_URL`` se
+// estiver definida. Caso contrário, assume o domínio público do serviço
+// hospedado no Render. O valor é usado para enviar o PDF gerado ao
+// servidor e receber um link permanente. Em produção, defina
+// ``VITE_BACKEND_URL`` nas variáveis de ambiente do Vercel com o domínio do
+// backend (por exemplo, ``https://producao-controle-backend.onrender.com``).
+// No ambiente de desenvolvimento local, você ainda pode sobrescrever
+// ``VITE_BACKEND_URL`` para ``http://localhost:5000``.
 const backendBaseUrl =
   typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_BACKEND_URL
     ? import.meta.env.VITE_BACKEND_URL
-    : 'http://localhost:5000'
+    : 'https://producao-controle-backend.onrender.com'
 
   // A URL base para o backend é definida na constante ``backendBaseUrl`` acima.
-  // Para produção, configure a variável VITE_BACKEND_URL no arquivo .env do
-  // projeto (em Vercel) apontando para o domínio do backend (por exemplo,
-  // https://producao-controle-backend.onrender.com). Em desenvolvimento, o
-  // valor padrão http://localhost:5000 será utilizado.
+  // Certifique‑se de definir ``VITE_BACKEND_URL`` no Vercel para evitar
+  // apontar para localhost em produção. Caso contrário, o link gerado para
+  // o PDF poderá ficar inacessível.
 
 
 /**
