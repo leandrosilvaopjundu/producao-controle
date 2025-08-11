@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react'
-// Import our unified Firebase service.  It provides methods to list,
-// update, save and upload data to Firestore and Storage.  The service
-// resides in the same directory as this component, so we import it
-// relatively.  If the path differs in your project structure, adjust
-// accordingly.
-// Import the shared firebase service from the `services` folder.  Because
-// this component resides in `src/components`, we need to go up one level to
-// `src/services`.  Adjust this path according to your project structure.
+// Importe nosso serviço Firebase unificado. Ele fornece métodos para listar,
+// atualizar, salvar e carregar dados no Firestore e no Storage. O serviço
+// reside no mesmo diretório que este componente, então o importamos
+// relativamente. Se o caminho for diferente na estrutura do seu projeto, ajuste
+// de acordo..
+// Importe o serviço compartilhado do Firebase da pasta `services`. Porque
+// este componente reside em `src/components`, precisamos subir um nível para
+// `src/services`. Ajuste este caminho de acordo com a estrutura do seu projeto.
 import { firebaseService } from '../services/firebaseService.js'
 import { Button } from '@/components/ui/button.jsx'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx'
