@@ -7,11 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
 import { Trash2, Plus, Save, FileDown, Edit, RefreshCw } from 'lucide-react'
-// Import functions from our unified Firebase service.  The service handles
-// saving e updating Firestore documents and uploading PDFs to Firebase
-// Storage.  Because this component is located inside `src/components`,
-// we need to traverse up one directory and into `services/firebaseService.js`.
-// Adjust the relative path if your project structure differs.
+// Importar funções do nosso serviço Firebase unificado. O serviço lida com
+// salvando e atualizando documentos do Firestore e enviando PDFs para o Firebase
+// Armazenamento. Como este componente está localizado dentro de `src/components`,
+// Precisamos percorrer um diretório e entrar em `services/firebaseService.js`.
+// Ajuste o caminho relativo se a estrutura do seu projeto for diferente.
 import { salvarRegistro, atualizarRegistro } from '../services/firebaseService.js'
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
