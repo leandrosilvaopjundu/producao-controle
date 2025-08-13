@@ -290,7 +290,7 @@ const HistoricoRegistros = ({ onEditarRegistro }) => {
                           size="sm"
                           onClick={() => {
                             const url = registro.pdfUrl || registro.pdfData
-                            window.open(url, '_blank')
+                            window.open(registro.pdfUrl, "_blank")
                           }}
                           className="text-blue-600 hover:text-blue-800 border-blue-300 hover:border-blue-500"
                         >

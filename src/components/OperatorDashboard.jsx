@@ -24,7 +24,7 @@ import html2canvas from 'html2canvas'
 // backend (por exemplo, ``https://producao-controle-backend.onrender.com``).
 // No ambiente de desenvolvimento local, você ainda pode sobrescrever
 // ``VITE_BACKEND_URL`` para ``http://localhost:5000``.
-const backendBaseUrl =
+const backendBaseUrl = import.meta.env.VITE_BACKEND_URL || "https://producao-controle-backend.onrender.com";
   typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_BACKEND_URL
     ? import.meta.env.VITE_BACKEND_URL
     : 'https://producao-controle-backend.onrender.com'
@@ -684,7 +684,7 @@ const OperatorDashboard_FUNCTION = ({ dadosEdicao, onNovoRegistro }) => {
           const pdfBlob = pdf.output('blob')
           const formDataUpload = new FormData()
           formDataUpload.append('file', pdfBlob, nomeArquivo)
-          const response = await fetch(`${backendBaseUrl}/api/upload-pdf`, {
+          const response = await fetch(`${backendBaseUrl}/api/generate-and-upload-pdf`, {
             method: 'POST',
             body: formDataUpload
           })
